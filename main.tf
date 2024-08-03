@@ -1,61 +1,58 @@
-# Enable Cloud Run API
+# Enable required APIs for Cloud Run, Eventarc, Pub/Sub, and Firestore
 resource "google_project_service" "run" {
   project            = var.project_id
   service            = "run.googleapis.com"
   disable_on_destroy = false
 }
 
-# Enable Eventarc API
 resource "google_project_service" "eventarc" {
   project            = var.project_id
   service            = "eventarc.googleapis.com"
   disable_on_destroy = false
 }
 
-# Enable Pub/Sub API
 resource "google_project_service" "pubsub" {
   project            = var.project_id
   service            = "pubsub.googleapis.com"
   disable_on_destroy = false
 }
 
-# Enable Firestore API
 resource "google_project_service" "firestore" {
   project            = var.project_id
   service            = "firestore.googleapis.com"
   disable_on_destroy = false
 }
 
-# The Pub/Sub topic that will be used to transport messages between the regions
-resource "google_pubsub_topic" "crossfiresyncrun_pubsub_topic" {
+# Create Pub/Sub topic for cross-region messaging
+resource "google_pubsub_topic" "crossfiresyncrun_topic" {
   project                    = var.project_id
   name                       = "${var.name}-crossfiresyncrun"
   message_retention_duration = "86600s"
 }
 
-# The Pub/Sub Service Account that Cloud Run runs with
-resource "google_service_account" "crossfiresyncrun_cloud_run_sa" {
+# Service account for Cloud Run services
+resource "google_service_account" "cloud_run_sa" {
   project      = var.project_id
   account_id   = "crossfiresyncrun-cr-${var.name}"
   display_name = "crossfiresyncrun Cloud Run (${var.name}) service account"
 }
 
-# Grant the Cloud Run service account the ability to write to Firestore
-resource "google_project_iam_member" "crossfiresyncrun_firestore_writer" {
+# IAM role to grant Firestore write permissions to Cloud Run service account
+resource "google_project_iam_member" "firestore_writer_role" {
   project = var.project_id
   role    = "roles/datastore.user"
-  member  = "serviceAccount:${google_service_account.crossfiresyncrun_cloud_run_sa.email}"
+  member  = "serviceAccount:${google_service_account.cloud_run_sa.email}"
 }
 
-# Grant publish permission to the Cloud Run service account for the specific Pub/Sub topic
-resource "google_pubsub_topic_iam_member" "crossfiresyncrun_pubsub_topic_publish" {
+# IAM role to grant Pub/Sub publish permissions to Cloud Run service account
+resource "google_pubsub_topic_iam_member" "pubsub_publisher_role" {
   project = var.project_id
-  topic   = google_pubsub_topic.crossfiresyncrun_pubsub_topic.name
+  topic   = google_pubsub_topic.crossfiresyncrun_topic.name
   role    = "roles/pubsub.publisher"
-  member  = "serviceAccount:${google_service_account.crossfiresyncrun_cloud_run_sa.email}"
+  member  = "serviceAccount:${google_service_account.cloud_run_sa.email}"
 }
 
-# The Cloud Run service in each of the regions
+# Deploy Cloud Run services in specified regions
 resource "google_cloud_run_v2_service" "crossfiresyncrun" {
   for_each = toset(var.regions)
   project  = var.project_id
@@ -64,10 +61,11 @@ resource "google_cloud_run_v2_service" "crossfiresyncrun" {
   ingress  = "INGRESS_TRAFFIC_INTERNAL_ONLY"
 
   template {
-    service_account = google_service_account.crossfiresyncrun_cloud_run_sa.email
-    
+    service_account = google_service_account.cloud_run_sa.email
+
     containers {
       image = "us-docker.pkg.dev/${var.project_id}/ghcr/unitvectory-labs/crossfiresyncrun:dev"
+
       env {
         name  = "REPLICATION_MODE"
         value = "MULTI_REGION_PRIMARY"
@@ -82,13 +80,13 @@ resource "google_cloud_run_v2_service" "crossfiresyncrun" {
       }
       env {
         name  = "TOPIC"
-        value = google_pubsub_topic.crossfiresyncrun_pubsub_topic.name
+        value = google_pubsub_topic.crossfiresyncrun_topic.name
       }
     }
   }
 }
 
-# Firestore databases in each of the regions
+# Create Firestore databases in specified regions
 resource "google_firestore_database" "databases" {
   for_each        = toset(var.regions)
   project         = var.project_id
@@ -98,35 +96,37 @@ resource "google_firestore_database" "databases" {
   deletion_policy = var.deletion_policy
 }
 
-resource "google_service_account" "crossfiresyncrun_eventarc_sa" {
+# Service account for Eventarc triggers
+resource "google_service_account" "eventarc_sa" {
   project      = var.project_id
   account_id   = "crossfiresyncrun-ea-${var.name}"
   display_name = "crossfiresyncrun Eventarc (${var.name}) service account"
 }
 
-resource "google_project_iam_member" "crossfiresyncrun_eventarc_sa_eventarc_event_receiver" {
+# IAM role to grant Eventarc event receiver permissions to Eventarc service account
+resource "google_project_iam_member" "eventarc_event_receiver_role" {
   project = var.project_id
   role    = "roles/eventarc.eventReceiver"
-  member  = "serviceAccount:${google_service_account.crossfiresyncrun_eventarc_sa.email}"
+  member  = "serviceAccount:${google_service_account.eventarc_sa.email}"
 }
 
-# Grant invoke permission to the Eventarc service account for the Cloud Run service
-resource "google_cloud_run_service_iam_member" "crossfiresyncrun_invoke_permission" {
+# IAM role to grant invoke permissions to Eventarc service account for Cloud Run services
+resource "google_cloud_run_service_iam_member" "invoke_permission" {
   for_each = toset(var.regions)
   project  = var.project_id
   location = each.value
   service  = google_cloud_run_v2_service.crossfiresyncrun[each.value].name
   role     = "roles/run.invoker"
-  member   = "serviceAccount:${google_service_account.crossfiresyncrun_eventarc_sa.email}"
+  member   = "serviceAccount:${google_service_account.eventarc_sa.email}"
 }
 
-# Eventarc trigger that will be used to trigger the Cloud Run service
-resource "google_eventarc_trigger" "crossfiresyncrur_eventarc_firebase_trigger" {
+# Eventarc trigger to invoke Cloud Run services on Firestore changes
+resource "google_eventarc_trigger" "firestore_trigger" {
   for_each                = toset(var.regions)
   project                 = var.project_id
   name                    = "crossfiresyncrun-${var.name}-${each.value}"
   location                = each.value
-  service_account         = google_service_account.crossfiresyncrun_eventarc_sa.email
+  service_account         = google_service_account.eventarc_sa.email
   event_data_content_type = "application/protobuf"
 
   matching_criteria {
@@ -147,20 +147,21 @@ resource "google_eventarc_trigger" "crossfiresyncrur_eventarc_firebase_trigger" 
     }
   }
 
-  depends_on = [google_project_iam_member.crossfiresyncrun_eventarc_sa_eventarc_event_receiver]
+  depends_on = [google_project_iam_member.eventarc_event_receiver_role]
 }
 
-resource "google_pubsub_subscription" "crossfiresyncrun_pubsub_subscription" {
+# Pub/Sub subscription to forward messages to Cloud Run services
+resource "google_pubsub_subscription" "pubsub_subscription" {
   for_each                = toset(var.regions)
   project                 = var.project_id
-  name  = "crossfiresyncrun-${var.name}-${each.value}"
-  topic = google_pubsub_topic.crossfiresyncrun_pubsub_topic.name
+  name                    = "crossfiresyncrun-${var.name}-${each.value}"
+  topic                   = google_pubsub_topic.crossfiresyncrun_topic.name
 
   push_config {
     push_endpoint = "${google_cloud_run_v2_service.crossfiresyncrun[each.value].uri}/pubsub"
 
     oidc_token {
-      service_account_email = google_service_account.crossfiresyncrun_eventarc_sa.email
+      service_account_email = google_service_account.eventarc_sa.email
     }
 
     attributes = {

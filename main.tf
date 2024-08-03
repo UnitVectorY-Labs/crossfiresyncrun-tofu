@@ -40,6 +40,13 @@ resource "google_service_account" "crossfiresyncrun_cloud_run_sa" {
   display_name = "crossfiresyncrun Cloud Run (${var.name}) service account"
 }
 
+# Grant the Cloud Run service account the ability to write to Firestore
+resource "google_project_iam_member" "crossfiresyncrun_firestore_writer" {
+  project = var.project_id
+  role    = "roles/datastore.user"
+  member  = "serviceAccount:${google_service_account.crossfiresyncrun_cloud_run_sa.email}"
+}
+
 # Grant publish permission to the Cloud Run service account for the specific Pub/Sub topic
 resource "google_pubsub_topic_iam_member" "crossfiresyncrun_pubsub_topic_publish" {
   project = var.project_id
@@ -141,4 +148,23 @@ resource "google_eventarc_trigger" "crossfiresyncrur_eventarc_firebase_trigger" 
   }
 
   depends_on = [google_project_iam_member.crossfiresyncrun_eventarc_sa_eventarc_event_receiver]
+}
+
+resource "google_pubsub_subscription" "crossfiresyncrun_pubsub_subscription" {
+  for_each                = toset(var.regions)
+  project                 = var.project_id
+  name  = "crossfiresyncrun-${var.name}-${each.value}"
+  topic = google_pubsub_topic.crossfiresyncrun_pubsub_topic.name
+
+  push_config {
+    push_endpoint = "${google_cloud_run_v2_service.crossfiresyncrun[each.value].uri}/pubsub"
+
+    oidc_token {
+      service_account_email = google_service_account.crossfiresyncrun_eventarc_sa.email
+    }
+
+    attributes = {
+      x-goog-version = "v1"
+    }
+  }
 }

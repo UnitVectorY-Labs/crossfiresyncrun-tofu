@@ -93,7 +93,7 @@ resource "google_firestore_database" "databases" {
   location_id     = each.value
   name            = "${var.name}-${each.value}"
   type            = "FIRESTORE_NATIVE"
-  deletion_policy = var.deletion_policy
+  deletion_policy = var.firestore_deletion_policy
 }
 
 # Service account for Eventarc triggers
@@ -156,6 +156,7 @@ resource "google_pubsub_subscription" "pubsub_subscription" {
   project                 = var.project_id
   name                    = "crossfiresyncrun-${var.name}-${each.value}"
   topic                   = google_pubsub_topic.crossfiresyncrun_topic.name
+  enable_message_ordering = true
 
   push_config {
     push_endpoint = "${google_cloud_run_v2_service.crossfiresyncrun[each.value].uri}/pubsub"

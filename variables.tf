@@ -1,5 +1,5 @@
 variable "name" {
-  description = "The name of the database"
+  description = "The name of the database (limited to 10 characters right now, boo)"
   type        = string
 }
 
@@ -13,13 +13,13 @@ variable "regions" {
   type        = list(string)
 }
 
-variable "deletion_policy" {
-  description = "The ID of the GCP project"
+variable "firestore_deletion_policy" {
+  description = "The deletion policy for Firestore databases"
   type        = string
   default     = "ABANDON"
 
   validation {
-    condition     = contains(["ABANDON", "DELETE"], var.deletion_policy)
-    error_message = "The deletion_policy variable must be one of: ABANDON, DELETE."
+    condition     = contains(["ABANDON", "DELETE"], var.firestore_deletion_policy)
+    error_message = "The firestore_deletion_policy variable must be one of: ABANDON, DELETE."
   }
 }

@@ -33,7 +33,7 @@ resource "google_pubsub_topic" "crossfiresyncrun_topic" {
 # Service account for Cloud Run services
 resource "google_service_account" "cloud_run_sa" {
   project      = var.project_id
-  account_id   = "crossfiresyncrun-cr-${var.name}"
+  account_id   = "cfscr-${var.name}"
   display_name = "crossfiresyncrun Cloud Run (${var.name}) service account"
 }
 
@@ -99,7 +99,7 @@ resource "google_firestore_database" "databases" {
 # Service account for Eventarc triggers
 resource "google_service_account" "eventarc_sa" {
   project      = var.project_id
-  account_id   = "crossfiresyncrun-ea-${var.name}"
+  account_id   = "cfsea-${var.name}"
   display_name = "crossfiresyncrun Eventarc (${var.name}) service account"
 }
 

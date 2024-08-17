@@ -13,6 +13,7 @@ module "crossfiresyncrun" {
     source = "git::https://github.com/UnitVectorY-Labs/crossfiresyncrun-tofu.git?ref=main"
     name = "mydb"
     project_id = var.project_id
+    artifact_registry_name = "ghcr"
     regions = ["us-east1"]
 }
 ```

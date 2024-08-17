@@ -52,6 +52,10 @@ resource "google_pubsub_topic_iam_member" "pubsub_publisher_role" {
   member  = "serviceAccount:${google_service_account.cloud_run_sa.email}"
 }
 
+locals {
+  final_artifact_registry_project_id = coalesce(var.artifact_registry_project_id, var.project_id)
+}
+
 # Deploy Cloud Run services in specified regions
 resource "google_cloud_run_v2_service" "crossfiresyncrun" {
   for_each = toset(var.regions)
@@ -64,7 +68,7 @@ resource "google_cloud_run_v2_service" "crossfiresyncrun" {
     service_account = google_service_account.cloud_run_sa.email
 
     containers {
-      image = "us-docker.pkg.dev/${var.project_id}/ghcr/unitvectory-labs/crossfiresyncrun:dev"
+      image = "${var.artifact_registry_host}/${local.final_artifact_registry_project_id}/${var.artifact_registry_name}/unitvectory-labs/crossfiresyncrun:${var.crossfiresyncrun_tag}"
 
       env {
         name  = "REPLICATION_MODE"

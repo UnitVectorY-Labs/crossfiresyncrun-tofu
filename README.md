@@ -2,7 +2,7 @@
 
 # crossfiresyncrun-tofu
 
-This OpenTofu module is used for deploying crossfiresyncrun to GCP.
+A module for OpenTofu that deploys crossfiresyncrun to GCP Cloud Run, along with configuring essential services including Firestore and Pub/Sub.
 
 ## Usage
 

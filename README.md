@@ -72,7 +72,7 @@ No modules.
 | <a name="input_artifact_registry_project_id"></a> [artifact\_registry\_project\_id](#input\_artifact\_registry\_project\_id) | The project to use for Artifact Registry. Will default to the project\_id if not set. | `string` | `null` | no |
 | <a name="input_crossfiresyncrun_tag"></a> [crossfiresyncrun\_tag](#input\_crossfiresyncrun\_tag) | The tag for the crossfiresyncrun image to deploy | `string` | `"dev"` | no |
 | <a name="input_firestore_deletion_policy"></a> [firestore\_deletion\_policy](#input\_firestore\_deletion\_policy) | The deletion policy for Firestore databases | `string` | `"ABANDON"` | no |
-| <a name="input_name"></a> [name](#input\_name) | The name of the database (limited to 10 characters right now, boo) | `string` | n/a | yes |
+| <a name="input_name"></a> [name](#input\_name) | The name of the database | `string` | n/a | yes |
 | <a name="input_project_id"></a> [project\_id](#input\_project\_id) | The GCP project id | `string` | n/a | yes |
 | <a name="input_regions"></a> [regions](#input\_regions) | List of regions where resources will be created | `list(string)` | n/a | yes |
 

@@ -1,5 +1,5 @@
 variable "name" {
-  description = "The name of the database (limited to 10 characters right now, boo)"
+  description = "The name of the database"
   type        = string
 
   validation {

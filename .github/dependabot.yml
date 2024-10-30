@@ -20,10 +20,4 @@ updates:
       day: "saturday"
       time: "07:00"
       timezone: "America/New_York"
-  - package-ecosystem: 'terraform'
-    directory: '/'
-    schedule:
-      interval: "weekly"
-      day: "saturday"
-      time: "07:00"
-      timezone: "America/New_York"
+    open-pull-requests-limit: 20

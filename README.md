@@ -1,6 +1,8 @@
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) [![Work In Progress](https://img.shields.io/badge/Status-Work%20In%20Progress-yellow)](https://guide.unitvectorylabs.com/bestpractices/status/#work-in-progress)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) [![Abandoned](https://img.shields.io/badge/Status-Abandoned-red)](https://guide.unitvectorylabs.com/bestpractices/status/#abandoned)
 
 # crossfiresyncrun-tofu
+
+This source repository is retired; development and maintenance have stopped. Existing ServiceAuthCentral deployment configuration and resources are deliberately retained. Repository archival does not retire running services or remove published releases, packages, or images.
 
 A module for OpenTofu that deploys crossfiresyncrun to GCP Cloud Run, along with configuring essential services including Firestore and Pub/Sub.
 
